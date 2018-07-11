@@ -16,7 +16,6 @@
    1. Make a nice web client with buttons.
    2. Implement the rest of the commands and data.
    3. Code up some cool robot behaviors
-   4. Setup to only connect to Skoobot
 
 */
 var http = require('http');
@@ -34,7 +33,7 @@ const BUZZER	= 0x17;
 const ROVER	= 0x40;
 const FOTOVORE	= 0x41;
 
-const SKOOBOT_SERVICE_UUID = '1523';
+const SKOOBOT_SERVICE_UUID = '000015231212efde1523785feabcd123';
 const DATA_CHARACTERISTIC_UUID = '000015241212efde1523785feabcd123';
 const COMMAND_CHARACTERISTIC_UUID = '000015251212efde1523785feabcd123';
 const DATA2_CHARACTERISTIC_UUID = '000015261212efde1523785feabcd123';
@@ -101,7 +100,7 @@ http.createServer(function (req, res) {
 noble.on('stateChange', state => {
   if (state === 'poweredOn') {
     console.log('Scanning');
-    noble.startScanning();
+    noble.startScanning([SKOOBOT_SERVICE_UUID]);
   } else {
     noble.stopScanning();
   }
