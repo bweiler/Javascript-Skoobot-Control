@@ -16,6 +16,7 @@
    1. Make a nice web client with buttons.
    2. Implement the rest of the commands and data.
    3. Code up some cool robot behaviors
+   4. Setup to only connect to Skoobot
 
 */
 var http = require('http');
