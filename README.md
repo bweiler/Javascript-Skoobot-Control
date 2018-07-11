@@ -8,5 +8,7 @@ To get working:
 2. Install noble "npm install noble"
 3. Download skoobot.js and run it like this:
 
-   node skoobot.js
+   sudo node skoobot.js
+   
+4. Check out comments in skoobot.js.
 
