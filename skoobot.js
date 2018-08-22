@@ -17,8 +17,10 @@
    2. Implement the rest of the commands and data.
    3. Code up some cool robot behaviors
 
+   NOTE: notifications don't seem to work on the Pi, use reads instead.
 */
 var http = require('http');
+
 var url = require('url');
 const noble = require('noble');
 
@@ -26,11 +28,11 @@ const LEFT  	= 0x10;
 const RIGHT 	= 0x11;
 const FORWARD 	= 0x12;
 const BACKWARD	= 0x13;
-const STOP 	= 0x14;
+const STOP 		= 0x14;
 const DISTANCE	= 0x22;
 const AMBIENT	= 0x22;
 const BUZZER	= 0x17;
-const ROVER	= 0x40;
+const ROVER		= 0x40;
 const FOTOVORE	= 0x41;
 
 const SKOOBOT_SERVICE_UUID = '000015231212efde1523785feabcd123';
@@ -42,8 +44,12 @@ const DATA20_CHARACTERISTIC_UUID = '000015281212efde1523785feabcd123';
 
 var cmdCharacteristic = null;
 var dataCharacteristic = null;
+var data20Characteristic = null;
 var dataready = 0;
-var datavalue = 0;
+var datavalue = new Buffer(1);
+var data20value = new Buffer(20);
+var msg = 'A';
+var cmdvar = 0;
 
 //This is webserver
 http.createServer(function (req, res) {
@@ -51,8 +57,8 @@ http.createServer(function (req, res) {
   var q = url.parse(req.url, true).query;
   var txt = q.cmd;
   console.log(txt);
-  var msg = 'unknown';
-  var cmdvar = 0;
+  msg = 'unknown';
+  cmdvar = 0;
   if (txt == 'forward') {
 	msg = 'Going forward';
 	cmdvar = FORWARD;
@@ -77,22 +83,44 @@ http.createServer(function (req, res) {
       msg = 'Distance';	
       cmdvar = DISTANCE;
   }
-  if (txt == 'value') {
-      if (dataready == 1)
-      {
-         msg = 'Data value: ',datavalue;
-         dataready = 0;
-      }else{
-	 msg = 'Unknown';	
-      }
+  if (txt == 'dval') {
+	  cmdvar = 0;
+	  msg = 'Read Distance last = ',datavalue;
+	  dataCharacteristic.read(function(err,data) {
+		if (err) {
+		  console.log('read error');
+		}
+		else
+		{
+		  console.log('data byte is is: ', data);
+  		  datavalue = data;
+		}
+	  });
   }
-  var cmdbyte = new Buffer(1);
-  cmdbyte.writeUInt8(cmdvar, 0);
-  cmdCharacteristic.write(cmdbyte, false, function(err) {
-	if (err) {
-	  console.log('write error');
-	}
-  });
+  if (txt == 'dval20') {
+	  cmdvar = 0;
+	  msg = 'Read 20 byte last = ',data20value;
+	  data20Characteristic.read(function(err,data) {
+		if (err) {
+		  console.log('read 20 byte error');
+		}
+		else
+		{
+		  console.log('data byte is is: ', data);
+  		  data20value = data;			
+		}
+	  });
+  }
+  if (cmdvar != 0)
+  {
+	  var cmdbyte = new Buffer(1);
+	  cmdbyte.writeUInt8(cmdvar, 0);
+	  cmdCharacteristic.write(cmdbyte, false, function(err) {
+		if (err) {
+		  console.log('write error');
+		}
+	  });
+  }
   res.end(msg);
 }).listen(8080);
 
@@ -153,33 +181,35 @@ function connectAndSetUp(peripheral) {
             console.log('found characteristic:', characteristic.uuid);
 
             if (COMMAND_CHARACTERISTIC_UUID == characteristic.uuid) {
-              cmdCharacteristic = characteristic;
-	      console.log('cmd characteristic matched');
+				cmdCharacteristic = characteristic;
+				console.log('cmd characteristic matched');
             }
             else if (DATA_CHARACTERISTIC_UUID == characteristic.uuid) {
-              dataCharacteristic = characteristic;
-  	      // data callback receives notifications
-	      console.log('data characteristic matched');
-   	      dataCharacteristic.on('data', (data, isNotification) => {
-	        console.log('Received: ', data.readUInt8(0));
-                dataready = 1;
-                datavalue = data.readUInt8(0);
-	      });
+				dataCharacteristic = characteristic;
+				console.log('data characteristic matched');
+				//dataCharacteristic.on('data', (data, isNotification) => {
+				//console.log('Received: ', data.readUInt8(0));
+                //dataready = 1;
+                //datavalue = data.readUInt8(0);
+				//});
 	  
-	      // subscribe to be notified whenever the peripheral update the characteristic
-	      dataCharacteristic.subscribe(error => {
-		  if (error) {
-		     console.error('Error subscribing to dataCharacteristic');
-		  } else {
-		     console.log('Subscribed for dataCharacteristic notifications');
-		  }
+				// subscribe to be notified whenever the peripheral update the characteristic
+				//dataCharacteristic.subscribe(error => {
+				//if (error) {
+				//   console.error('Error subscribing to dataCharacteristic');
+				//} else {
+				//   console.log('Subscribed for dataCharacteristic notifications');
+				//}
+			}
+	        else if (DATA20_CHARACTERISTIC_UUID == characteristic.uuid) {
+				data20Characteristic = characteristic;
+				console.log('data 20 characteristic matched');
+			}
 	      }); 
-           }
-         })
-       })
-    })
-  })
- })
+        });
+      });
+    });
+  });
 }
 
  // create an interval to send data to the service
