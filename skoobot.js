@@ -2,25 +2,23 @@
 
    This implements Bluetooth and a webserver. You must install Node.js and Noble. See Github and the Skoobot site for instructions.
 
-   To run this code: Turn on your robot on near your Raspberry Pi. Start this code by running this in a command window:
-
+   To run this code: Power on your robot near your Raspberry Pi. Start the web servers by typing this in a terminal:
+   
    sudo node skoobot.js
 
-   Then open a browser. To make the robot go forward, type http://localhost:8080/?cmd=forward
-   (Don't forget the ?)
+   Then open a browser. Navigate to "http://localhost:8081/" To make the robot do something, press the button. To do another command, hit the browser back button.
 
    If weird error messages come out, reboot your Raspberry Pi. If that doesn't work contact me.
 
    Also, there is more work to do:
-    
-   1. Make a nice web client with buttons.
+   
+   1. Make the web interface nicer
    2. Implement the rest of the commands and data.
    3. Code up some cool robot behaviors
 
-   NOTE: notifications don't seem to work on the Pi, use reads instead.
+   NOTE: notifications don't seem to work on the Pi, I have to code reads instead.
 */
 var http = require('http');
-
 var url = require('url');
 const noble = require('noble');
 
@@ -48,11 +46,27 @@ var data20Characteristic = null;
 var dataready = 0;
 var datavalue = new Buffer(1);
 var data20value = new Buffer(20);
-var msg = 'A';
-var cmdvar = 0;
+let msg;
+let cmdvar;
 
-//This is webserver
-http.createServer(function (req, res) {
+//This is a webserver, just http://localhost:8081/
+const server0 = http.createServer(function (req, res)
+{
+  res.writeHead(200, {'Content-Type': 'text/html'});
+  res.write('<html><head><title>Buttons to command Skoobot</title></head><body> \
+  <form action="http://localhost:8080/?cmd=forward" method="POST"><button>Go forward</button></form> \
+  <form action="http://localhost:8080/?cmd=right" method="POST"><button>Turn Right</button></form> \
+  <form action="http://localhost:8080/?cmd=left" method="POST"><button>Turn Left</button></form> \
+  <form action="http://localhost:8080/?cmd=stop" method="POST"><button>Stop</button></form> \
+  </html>');
+  res.end(" ");
+});
+
+server0.listen(8081);
+
+//This is a webserver, http://localhost:8080/?cmd=X
+const server1 = http.createServer(function (req, res)
+{
   res.writeHead(200, {'Content-Type': 'text/html'});
   var q = url.parse(req.url, true).query;
   var txt = q.cmd;
@@ -121,8 +135,12 @@ http.createServer(function (req, res) {
 		}
 	  });
   }
-  res.end(msg);
-}).listen(8080);
+  res.write(msg);
+  res.end();
+});
+
+server1.listen(8080);
+
 
 //This does scanned for Skoobot
 noble.on('stateChange', state => {
