@@ -1,5 +1,7 @@
 #Skoobot Raspberry Pi Javascript Command and Data Program
 
+NOTE: I stopped developing this because users want Python, but maybe this code can be extended by someone who wants Javascript.
+
 To get working:
 
 1. Install node.js
